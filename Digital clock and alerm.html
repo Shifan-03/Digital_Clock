@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ডিজিটাল নিওন ঘড়ি এবং অ্যালার্ম</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Neon Glow Effect for the main clock */
+        .neon-blue {
+            color: #4dc0c8;
+            text-shadow: 0 0 7px #0e7490,
+                         0 0 10px #0e7490,
+                         0 0 21px #06b6d4,
+                         0 0 42px rgba(6, 182, 212, 0.7);
+        }
+
+        /* Neon Glow Effect for the alarm/indicator (Red) */
+        .neon-red {
+            color: #f87171;
+            text-shadow: 0 0 7px #b91c1c,
+                         0 0 10px #b91c1c,
+                         0 0 21px #ef4444,
+                         0 0 42px rgba(239, 68, 68, 0.7);
+        }
+
+        /* Reflection and Card Styling */
+        .clock-card {
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(45, 212, 191, 0.3);
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.2),
+                        0 8px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Digital Font Look */
+        .digital-font {
+            font-family: 'Segment7', monospace;
+            font-size: clamp(3rem, 10vw, 7rem); 
+        }
+
+        /* Custom styling for select boxes to match the theme */
+        .neon-select {
+            appearance: none;
+            background-color: #1f2937;
+            border: 1px solid #0e7490;
+            color: #4dc0c8;
+            transition: border-color 0.2s;
+        }
+        .neon-select:focus {
+            border-color: #06b6d4;
+        }
+
+        /* Control Button Styling */
+        .control-btn {
+            transition: all 0.2s;
+            box-shadow: 0 3px 0 #1f2937;
+        }
+        .control-btn:active {
+            box-shadow: 0 0 0 #1f2937;
+            transform: translateY(3px);
+        }
+
+        /* Hidden audio element for the alarm sound */
+        #alarm-audio {
+            display: none;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 flex flex-col items-center justify-center min-h-screen p-4" style="background-image: radial-gradient(circle at center, #111827, #000000);">
+
+    <audio id="alarm-audio" loop>
+        <source src="data:audio/wav;base64,UklGRl9vT1JXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAAABkYXRhAAADQAD///9EUElQSwAAAAAAAAA=" type="audio/wav">
+    </audio>
+
+    <div class="clock-card p-6 md:p-10 rounded-xl max-w-lg w-full text-center" role="region" aria-label="Digital Clock and Alarm Settings">
+        
+        <h1 id="time-display" class="digital-font neon-blue mb-4 leading-none" role="timer" aria-live="polite">00:00:00</h1>
+        
+        <p id="date-display" class="text-xl font-mono text-gray-400 mb-6" aria-live="polite">সোমবার, জানুয়ারি ১, ২০২৪</p>
+
+        <div class="flex justify-center items-center mb-6">
+            <svg id="alarm-icon" class="w-8 h-8 mr-3 text-gray-500 transition-colors duration-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Alarm Status Icon">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-4a2 2 0 11-4 0 2 2 0 014 0zM8 10a2 2 0 00-2 2v3a2 2 0 002 2h4a2 2 0 002-2v-3a2 2 0 00-2-2H8z" clip-rule="evenodd"></path>
+            </svg>
+            <p id="alarm-status" class="text-lg font-semibold text-gray-300" aria-live="polite">অ্যালার্ম সেট করা নেই</p>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-center">
+            
+            <select id="alarm-hour-input" class="neon-select p-3 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none text-xl w-full md:w-20" aria-label="Alarm Hour">
+                </select>
+            
+            <span class="text-2xl neon-blue hidden md:inline">:</span>
+
+            <select id="alarm-minute-input" class="neon-select p-3 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none text-xl w-full md:w-20" aria-label="Alarm Minute">
+                </select>
+            
+            <button id="set-alarm-btn" class="control-btn px-6 py-3 bg-teal-500 hover:bg-teal-600 text-gray-900 font-bold rounded-lg w-full md:w-auto mt-2 md:mt-0" type="button">
+                অ্যালার্ম সেট করুন
+            </button>
+            <button id="clear-alarm-btn" class="control-btn px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg w-full md:w-auto" type="button">
+                বন্ধ করুন
+            </button>
+        </div>
+    </div>
+    
+    <footer class="mt-8 text-sm text-gray-500">
+        Created by Shifan
+    </footer>
+
+    <div id="alarm-modal" class="fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50" role="alertdialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="bg-gray-800 p-8 rounded-xl text-center shadow-2xl max-w-sm w-full border-4 border-red-500 neon-red-border">
+            <h2 id="modal-title" class="text-4xl font-extrabold mb-4 neon-red">🔔 অ্যালার্ম বাজছে!</h2>
+            <p id="modal-time" class="text-2xl text-gray-200 mb-6 font-mono"></p>
+            <button id="close-modal-btn" class="control-btn px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg" type="button">
+                অ্যালার্ম বন্ধ করুন
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const timeDisplay = document.getElementById('time-display');
+        const dateDisplay = document.getElementById('date-display');
+        const alarmHourInput = document.getElementById('alarm-hour-input');
+        const alarmMinuteInput = document.getElementById('alarm-minute-input');
+        const setAlarmBtn = document.getElementById('set-alarm-btn');
+        const clearAlarmBtn = document.getElementById('clear-alarm-btn');
+        const alarmStatus = document.getElementById('alarm-status');
+        const alarmIcon = document.getElementById('alarm-icon');
+        const alarmAudio = document.getElementById('alarm-audio');
+        const alarmModal = document.getElementById('alarm-modal');
+        const modalTime = document.getElementById('modal-time');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        
+        let savedAlarmTime = null; // Stored as "HH:MM"
+
+        /**
+         * 0 থেকে 9 পর্যন্ত সংখ্যাকে '01', '02' এভাবে প্যাড করে দেয়।
+         */
+        function pad(number) {
+            return String(number).padStart(2, '0');
+        }
+
+        /**
+         * ঘন্টা (00-23) এবং মিনিট (00-59) এর জন্য ড্রপডাউন অপশন তৈরি করে।
+         */
+        function populateTimeOptions() {
+            // Populate Hours (00 to 23)
+            for (let h = 0; h < 24; h++) {
+                const hour = pad(h);
+                const option = new Option(hour, hour);
+                alarmHourInput.appendChild(option);
+            }
+            
+            // Populate Minutes (00 to 59)
+            for (let m = 0; m < 60; m++) {
+                const minute = pad(m);
+                const option = new Option(minute, minute);
+                alarmMinuteInput.appendChild(option);
+            }
+            
+            // Set a default value (e.g., 08:00)
+            alarmHourInput.value = '08';
+            alarmMinuteInput.value = '00';
+        }
+
+
+        // --- Core Clock Functionality ---
+
+        /**
+         * রিয়েল-টাইমে ঘড়ি, তারিখ এবং অ্যালার্মের অবস্থা আপডেট করে।
+         */
+        function updateClock() {
+            const now = new Date();
+            
+            // সময় ডিসপ্লে (HH:MM:SS)
+            const hours = pad(now.getHours());
+            const minutes = pad(now.getMinutes());
+            const seconds = pad(now.getSeconds());
+            
+            const currentTimeStr = ${hours}:${minutes}:${seconds};
+            timeDisplay.textContent = currentTimeStr;
+
+            // তারিখ ডিসপ্লে
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateDisplay.textContent = now.toLocaleDateString('bn-BD', dateOptions);
+
+            // --- অ্যালার্ম চেক ---
+            if (savedAlarmTime) {
+                const currentAlarmCheckTime = ${hours}:${minutes};
+
+                if (currentAlarmCheckTime === savedAlarmTime) {
+                    triggerAlarm(currentTimeStr);
+                }
+            }
+        }
+
+        /**
+         * Local Storage থেকে অ্যালার্ম লোড করে।
+         */
+        function loadAlarm() {
+            const storedTime = localStorage.getItem('digitalClockAlarm'); // HH:MM
+            
+            populateTimeOptions(); // ড্রপডাউন তৈরি করুন
+
+            if (storedTime) {
+                savedAlarmTime = storedTime;
+                
+                // ড্রপডাউন ভ্যালু সেট করুন
+                const [storedHour, storedMinute] = storedTime.split(':');
+                
+                alarmHourInput.value = storedHour || '08';
+                alarmMinuteInput.value = storedMinute || '00';
+                
+                updateAlarmDisplay(storedTime);
+            } else {
+                 updateAlarmDisplay(null);
+            }
+        }
+
+        /**
+         * অ্যালার্ম ডিসপ্লে আপডেট করে এবং স্টাইল পরিবর্তন করে।
+         */
+        function updateAlarmDisplay(time) {
+            if (time) {
+                alarmStatus.textContent = অ্যালার্ম সেট করা আছে: ${time};
+                alarmStatus.classList.add('neon-red');
+                alarmStatus.classList.remove('text-gray-300');
+                alarmIcon.classList.add('neon-red');
+                alarmIcon.classList.remove('text-gray-500');
+            } else {
+                alarmStatus.textContent = 'অ্যালার্ম সেট করা নেই';
+                alarmStatus.classList.remove('neon-red');
+                alarmStatus.classList.add('text-gray-300');
+                alarmIcon.classList.remove('neon-red');
+                alarmIcon.classList.add('text-gray-500');
+            }
+        }
+
+        /**
+         * অ্যালার্ম ট্রিগার হলে মডেল এবং অডিও চালু করে।
+         */
+        function triggerAlarm(timeStr) {
+            // অ্যালার্ম একবার বাজানোর জন্য এটি চেক করুন
+            if (alarmModal.classList.contains('hidden')) {
+                alarmModal.style.display = 'flex';
+                alarmModal.classList.remove('hidden');
+                modalTime.textContent = timeStr;
+                
+                // অডিও চালানো
+                alarmAudio.play().catch(e => console.error("Could not play audio (User interaction required):", e));
+                
+                // রিংিং ইফেক্টের জন্য ঘড়িকে লাল করুন
+                timeDisplay.classList.add('neon-red');
+                timeDisplay.classList.remove('neon-blue');
+            }
+        }
+
+        /**
+         * অ্যালার্ম বন্ধ করে মডেল এবং অডিও বন্ধ করে।
+         */
+        function stopAlarm() {
+            alarmModal.classList.add('hidden');
+            alarmModal.style.display = 'none';
+            
+            // অডিও বন্ধ করুন এবং পুনরায় শুরু করার জন্য প্রস্তুত করুন
+            alarmAudio.pause();
+            alarmAudio.currentTime = 0;
+            
+            // ঘড়িকে আবার নীল করুন
+            timeDisplay.classList.remove('neon-red');
+            timeDisplay.classList.add('neon-blue');
+        }
+
+        // --- ইভেন্ট লিসেনার ---
+
+        setAlarmBtn.addEventListener('click', () => {
+            stopAlarm(); 
+            
+            const selectedHour = alarmHourInput.value;
+            const selectedMinute = alarmMinuteInput.value;
+            
+            const newTime = ${selectedHour}:${selectedMinute};
+
+            if (newTime) {
+                savedAlarmTime = newTime;
+                localStorage.setItem('digitalClockAlarm', newTime);
+                updateAlarmDisplay(newTime);
+                console.log(Alarm set for: ${newTime});
+            } else {
+                console.log("Please select a valid time.");
+            }
+        });
+
+        clearAlarmBtn.addEventListener('click', () => {
+            stopAlarm();
+            savedAlarmTime = null;
+            localStorage.removeItem('digitalClockAlarm');
+            // ড্রপডাউন ডিফল্টে সেট করুন
+            alarmHourInput.value = '08';
+            alarmMinuteInput.value = '00'; 
+            updateAlarmDisplay(null);
+            console.log("Alarm cleared.");
+        });
+        
+        closeModalBtn.addEventListener('click', stopAlarm);
+
+        // --- অ্যাপ্লিকেশন শুরু করা ---
+
+        // প্রতি সেকেন্ডে ঘড়ি আপডেট করুন
+        setInterval(updateClock, 1000);
+        
+        // প্রথম লোডে অ্যালার্ম লোড করুন এবং ঘড়িটি একবার আপডেট করুন
+        window.onload = () => {
+            loadAlarm();
+            updateClock();
+        };
+
+    </script>
+</body>
+</html>
